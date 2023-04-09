@@ -26,15 +26,17 @@
             color="primary"
             @click="createQuery"
             class="ma-4"
-            >音声合成開始</VBtn
           >
+            音声合成開始
+          </VBtn>
           <VBtn
             :disabled="voiceCreating"
             color="gray"
             @click="resetForm"
             class="ma-4"
-            >リセット</VBtn
           >
+            リセット
+          </VBtn>
         </VCol>
         <VCol cols="12" v-if="audioData && audioSrc">
           <h2>合成された音声データを再生</h2>
@@ -78,43 +80,70 @@ const speakerList = [
   { name: '九州そら：ノーマル', value: 16 },
 ];
 
-// 文字列からQueryを作り出す
+/**
+ * 入力された文字列からQueryを作り出す
+ */
 const createQuery = async () => {
-  voiceCreating.value = true;
-  const res = await superagent
-    .post(`${baseUrl}/audio_query`)
-    .query({ speaker: speaker.value, text: inputText.value });
-  if (!res) {
+  try {
+    voiceCreating.value = true;
+    const res = await superagent
+      .post(`${baseUrl}/audio_query`)
+      .query({ speaker: speaker.value, text: inputText.value });
+    if (!res) {
+      resetForm();
+      return;
+    }
+    query.value = res.body as Query;
+    console.log(`Response: ${JSON.stringify(query.value)}`);
+    // Query が返ってきたら音声合成を開始
+    await createVoice();
+  } catch (error) {
+    console.error(error);
+    if (error instanceof Error) {
+      console.error(error.message);
+    }
     resetForm();
-    return;
   }
-  query.value = res.body as Query;
-  console.log(`Response: ${JSON.stringify(query.value)}`);
-  await createVoice();
 };
 
+/**
+ * 生成された Query を基に音声合成する
+ */
 const createVoice = async () => {
   console.log(`createVoice called!`);
-  if (!query.value) return;
-  // || !process.browser
-  console.log(`Creating voice...`);
-  const res = await superagent
-    .post(`${baseUrl}/synthesis`)
-    .query({ speaker: speaker.value })
-    .send(query.value)
-    .responseType('blob');
-  console.log(`Voice created!`);
-
-  if (!res) {
+  if (!query.value) {
     resetForm();
     return;
   }
-  //
-  audioData.value = res.body as Blob;
-  audioSrc.value = window.URL.createObjectURL(audioData.value);
-  voiceCreating.value = false;
+  try {
+    console.log(`Creating voice...`);
+    const res = await superagent
+      .post(`${baseUrl}/synthesis`)
+      .query({ speaker: speaker.value })
+      .send(query.value)
+      .responseType('blob');
+    console.log(`Voice created!`);
+
+    if (!res) {
+      resetForm();
+      return;
+    }
+    // 音声データを audio タグに設定して再生する
+    audioData.value = res.body as Blob;
+    audioSrc.value = window.URL.createObjectURL(audioData.value);
+    voiceCreating.value = false;
+  } catch (error) {
+    console.error(error);
+    if (error instanceof Error) {
+      console.error(error.message);
+    }
+    resetForm();
+  }
 };
 
+/**
+ * フォームの入力値を初期化する
+ */
 const resetForm = () => {
   inputText.value = initialText;
   speaker.value = initialSpeaker;
