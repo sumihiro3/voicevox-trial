@@ -9,11 +9,11 @@
           <VTextarea id="inputText" v-model="inputText" />
         </VCol>
         <VCol cols="12">
-          <label for="speakerType">
+          <label for="speakerSelect">
             発話するキャラクターを選択してください
           </label>
           <VSelect
-            id="speakerType"
+            id="speakerSelect"
             v-model="speaker"
             :items="speakerList"
             item-title="name"
@@ -31,7 +31,7 @@
           </VBtn>
           <VBtn
             :disabled="voiceCreating"
-            color="gray"
+            color="blue-grey"
             @click="resetForm"
             class="ma-4"
           >
@@ -50,7 +50,7 @@
 
 <script setup lang="ts">
 import superagent from 'superagent';
-import { Mora, Query } from '../types';
+import { Query } from '../types';
 
 const runtimeConfig = useRuntimeConfig();
 const baseUrl = runtimeConfig.public.API_BASE_URL as string;
@@ -63,7 +63,7 @@ const speaker = ref<number>(initialSpeaker);
 const voiceCreating = ref<boolean>(false);
 const query = ref<Query | null>(null);
 const audioData = ref<Blob | null>(null);
-const audioSrc = ref();
+const audioSrc = ref<string | null>(null);
 
 const speakerList = [
   { name: 'ずんだもん：あまあま', value: 1 },
